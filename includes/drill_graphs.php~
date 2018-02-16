@@ -1,0 +1,118 @@
+<?php
+	$userid = "";
+	$adminstatus = 3;
+	$property_manager_id = "";
+	if (!empty($_SESSION)){
+		$userid = $_SESSION["userid"] ;
+		$adminstatus = $_SESSION["adminstatus"] ;
+	}
+	include_once('includes/db_conn.php');
+	$expense_month = date("m");
+	$expense_year = date("Y");
+	if (!empty($_GET)){	
+		$filter_start_date = $_GET['report_start_date'];
+		$filter_end_date = $_GET['report_end_date'];
+		$subcounty = $_GET['subcounty'];
+	}
+?>
+<script type="text/javascript">
+      $(document).ready(function () {      
+	
+	jQuery('#payments_tracking').tufteBar({
+          data: [
+			<?php
+				if($subcounty == 'juja'){
+					$result_juja = mysql_query("select sum(".$subcounty."_quarry.statements.invoice_amount)".$subcounty."_quarry, (select sum(".$subcounty."_market_fees.statements.invoice_amount)".$subcounty."_market_fees from ".$subcounty."_market_fees.statements where ".$subcounty."_market_fees.statements.paid_date between '$filter_start_date' and '$filter_end_date' and ".$subcounty."_market_fees.statements.status = 'Paid')".$subcounty."_market_fees from ".$subcounty."_quarry.statements where paid_date between '$filter_start_date' and '$filter_end_date' and status = 'Paid'");
+					while ($row = mysql_fetch_array($result_juja))
+					{
+						$quarry = $row['juja_quarry'];
+						$market_fees = $row['juja_market_fees'];
+						
+						$quarry_label= '<a href = "financial_summary_drill.php?report_start_date='.$filter_start_date.'&report_end_date='.$filter_end_date.'&subcounty='.juja.'&mode=drill2">Juja Quarry</a>';
+						$market_fees_label= '<a href = "financial_summary_drill.php?report_start_date='.$filter_start_date.'&report_end_date='.$filter_end_date.'&subcounty='.juja.'&mode=drill3">Juja Markets</a>';
+						?>
+							[<?php echo $quarry?>, {label: '<?php echo $quarry_label ?>'}],
+							[<?php echo $market_fees?>, {label: '<?php echo $market_fees_label ?>'}],
+						<?php
+					}
+				}
+				else{
+					$result_juja = mysql_query("select sum(".$subcounty."_market_fees.statements.invoice_amount)".$subcounty."_market_fees from ".$subcounty."_market_fees.statements where ".$subcounty."_market_fees.statements.paid_date between '$filter_start_date' and '$filter_end_date' and ".$subcounty."_market_fees.statements.status = 'Paid'");
+					while ($row = mysql_fetch_array($result_juja))
+					{
+						$market_fees = $row[$subcounty.'_market_fees'];
+						$market_fees_label= '<a href = "financial_summary_drill.php?report_start_date='.$filter_start_date.'&report_end_date='.$filter_end_date.'&subcounty='.$subcounty.'&mode=drill3">Markets</a>';
+						?>
+							[<?php echo $market_fees?>, {label: '<?php echo $market_fees_label ?>'}],
+						<?php
+					}
+				}
+			?>
+          ],
+          barWidth: 0.8,
+          axisLabel: function(index) { return this[1].label },
+          color:     function(index) { return ['#71588F', '#0B3B0B'][index % 2] }
+        });
+        
+        jQuery('#drill2').tufteBar({
+          data: [
+			<?php
+				$result_juja = mysql_query("select distinct subcategories.name, sum(invoice_amount)invoice_amount from juja_quarry.statements inner join juja_quarry.subcategories on statements.subcategory = subcategories.id where paid_date between '$filter_start_date' and '$filter_end_date' and status = 'Paid' group by subcategories.name");
+				while ($row = mysql_fetch_array($result_juja))
+				{
+					$name = $row['name'];
+					$invoice_amount = $row['invoice_amount'];
+					$market_label= '<a href = "financial_summary_drill.php?report_start_date='.$filter_start_date.'&report_end_date='.$filter_end_date.'&subcategory='.$subcategory.'&subcounty='.$subcounty.'&mode=drill4">'.$name.'</a>';
+					?>
+						[<?php echo $invoice_amount?>, {label: '<?php echo $market_label ?>'}],
+					<?php
+				}
+			?>
+          ],
+          barWidth: 0.8,
+          axisLabel: function(index) { return this[1].label },
+          color:     function(index) { return ['#71BF00', '#2F9E3A'][index % 2] }
+        });
+        
+        jQuery('#drill3').tufteBar({
+          data: [
+			<?php
+				$result_juja = mysql_query("select distinct subcategory, sum(invoice_amount)invoice_amount from ".$subcounty."_market_fees.statements where paid_date between '$filter_start_date' and '$filter_end_date' group by subcategory");
+				while ($row = mysql_fetch_array($result_juja))
+				{
+					$subcategory = $row['subcategory'];
+					$invoice_amount = $row['invoice_amount'];
+					$market_label= '<a href = "financial_summary_drill.php?report_start_date='.$filter_start_date.'&report_end_date='.$filter_end_date.'&subcategory='.$subcategory.'&subcounty='.$subcounty.'&mode=drill4">'.$subcategory.'</a>';
+					?>
+						[<?php echo $invoice_amount?>, {label: '<?php echo $market_label ?>'}],
+					<?php
+				}
+			?>
+          ],
+          barWidth: 0.8,
+          axisLabel: function(index) { return this[1].label },
+          color:     function(index) { return ['#71BF00', '#2F9E3A'][index % 2] }
+        });
+        
+        jQuery('#drill4').tufteBar({
+          data: [
+			<?php
+				$result_juja = mysql_query("select distinct product, sum(invoice_amount)invoice_amount from ".$subcounty."_market_fees.statements where subcategory = '$subcategory ' and paid_date between '$filter_start_date' and '$filter_end_date' group by product");
+				while ($row = mysql_fetch_array($result_juja))
+				{
+					$product = $row['product'];
+					$invoice_amount = $row['invoice_amount'];
+					?>
+						[<?php echo $invoice_amount?>, {label: '<?php echo $product ?>'}],
+					<?php
+				}
+			?>
+          ],
+          barWidth: 0.8,
+          axisLabel: function(index) { return this[1].label },
+          color:     function(index) { return ['#71BF00', '#2F9E3A'][index % 2] }
+        });
+
+
+      });
+    </script>

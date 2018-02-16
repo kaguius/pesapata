@@ -1,0 +1,8 @@
+<?php
+    
+    	$conn = mysql_connect("localhost","root","kaguius");
+    	//$conn = mysql_connect("10.181.130.239","root","admin2014@)!$");
+    	
+    	mysql_select_db("pesapata_direct",$conn);
+	
+?>
